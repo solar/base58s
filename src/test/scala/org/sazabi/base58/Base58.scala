@@ -26,7 +26,7 @@ class Base58Spec extends FlatSpec with Matchers with Inside {
 
   it should "return exception if received an invalid string" in {
     inside(Base58.fromString(invalid)) {
-      case -\/(e) => println(e) 
+      case -\/(e) =>
     }
   }
 

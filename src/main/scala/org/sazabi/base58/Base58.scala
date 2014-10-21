@@ -13,6 +13,16 @@ trait Base58 {
 
   private[this] val Base58Size = Base58Chars.size
 
+  private[this] def index(c: Char) = c match {
+    case c if c <= '9' && c >= '1' => Some(c - '1')
+    case c if c <= 'k' && c >= 'a' => Some(c - 'a' + 33)
+    case c if c <= 'z' && c >= 'm' => Some(c - 'm' + 44)
+    case c if c >= 'A' && c <= 'H' => Some(c - 'A' + 9)
+    case c if c >= 'J' && c <= 'N' => Some(c - 'J' + 17)
+    case c if c >= 'P' && c <= 'Z' => Some(c - 'P' + 22)
+    case _ => None
+  }
+
   def apply(bytes: Array[Byte]): Base58String = {
     val bi = BigInt(1, bytes)
 
@@ -35,24 +45,20 @@ trait Base58 {
   }
 
   def fromString(str: String): Throwable \/ Base58String = {
-    val i = str.indexWhere(invalidChar)
+    val i = str.indexWhere(index(_).isEmpty)
 
     if (i == -1) \/-(Base58String(str))
     else -\/(InvalidCharacterException(str(i), i))
   }
 
   def toByteArray(b58: Base58String): Throwable \/ Array[Byte] = {
-    val bytes: Throwable \/ Array[Byte] = {
+    val bytes: Throwable \/ Array[Byte] = \/.fromTryCatchNonFatal {
       val size = b58.str.size
-
-      \/.fromTryCatchNonFatal {
-        (0 until size).map { i =>
-          val c = b58.str(i)
-          val index = Base58Chars.indexOf(c)
-          if (index == -1) throw InvalidCharacterException(c, i)
-          BigInt(index) * BigInt(Base58Size).pow(size - 1 - i)
-        }.sum.toByteArray
-      }
+      b58.str.zipWithIndex.foldRight(BigInt(0)) { (c, bi) =>
+        index(c._1).map { i =>
+          bi + (BigInt(i) * BigInt(Base58Size).pow(size - 1 - c._2))
+        }.getOrElse(throw InvalidCharacterException(c._1, c._2))
+      }.toByteArray
     }
 
     bytes map { bytes =>
