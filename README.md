@@ -1,5 +1,4 @@
 # base58s [![Build Status](https://travis-ci.org/solar/base58s.svg?branch=master)](https://travis-ci.org/solar/base58s)
-========
 
 Simple Base58 implementation for scala
 
