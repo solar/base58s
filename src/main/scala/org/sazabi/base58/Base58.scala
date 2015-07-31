@@ -24,24 +24,27 @@ trait Base58 {
   }
 
   def apply(bytes: Array[Byte]): Base58String = {
-    val bi = BigInt(1, bytes)
+    if (bytes.isEmpty) Base58String("")
+    else {
+      val bi = BigInt(1, bytes)
 
-    val s = new StringBuilder
+      val s = new StringBuilder
 
-    @tailrec
-    def append(rest: BigInt) {
-      val div = rest / Base58Size
-      val mod = rest % Base58Size
-      s.insert(0, Base58Chars(mod.intValue))
-      if (div > 0) append(div)
+      @tailrec
+      def append(rest: BigInt) {
+        val div = rest / Base58Size
+        val mod = rest % Base58Size
+        s.insert(0, Base58Chars(mod.intValue))
+        if (div > 0) append(div)
+      }
+
+      append(bi)
+
+      val zeros = bytes.indexWhere(_ != 0)
+      0 until zeros foreach { _ => s.insert(0, Base58Chars(0)) }
+
+      Base58String(s.toString)
     }
-
-    append(bi)
-
-    val zeros = bytes.indexWhere(_ != 0)
-    0 until zeros foreach { _ => s.insert(0, Base58Chars(0)) }
-
-    Base58String(s.toString)
   }
 
   def fromString(str: String): Throwable \/ Base58String = {
@@ -52,24 +55,22 @@ trait Base58 {
   }
 
   def toByteArray(b58: Base58String): Throwable \/ Array[Byte] = {
-    val bytes: Throwable \/ Array[Byte] = \/.fromTryCatchNonFatal {
-      val size = b58.str.size
-      b58.str.zipWithIndex.foldRight(BigInt(0)) { (c, bi) =>
-        index(c._1).map { i =>
-          bi + (BigInt(i) * BigInt(Base58Size).pow(size - 1 - c._2))
-        }.getOrElse(throw InvalidCharacterException(c._1, c._2))
-      }.toByteArray
-    }
+    if (b58.str.isEmpty) \/-(Array.empty[Byte])
+    else {
+      def toBytes: String => Throwable \/ Array[Byte] = in => \/.fromTryCatchNonFatal {
+        val size = in.size
+        in.zipWithIndex.foldRight(BigInt(0)) { (c, bi) =>
+          index(c._1).map { i =>
+            bi + (BigInt(i) * BigInt(Base58Size).pow(size - 1 - c._2))
+          }.getOrElse(throw InvalidCharacterException(c._1, c._2))
+        }.toByteArray.dropWhile(_ == 0)
+      }
 
-    bytes map { bytes =>
-      val offset = if (bytes.size > 2 && bytes(0) == 0 && bytes(1) < 0) 1 else 0;
+      val (z, in) = b58.str.span(_ == Base58Chars.head)
+      val zeros = z.map(_ => 0: Byte).toArray
 
-      val zeros = b58.str.indexWhere(_ != Base58Chars.head)
-
-      val dest = new Array[Byte](bytes.size - offset + zeros)
-
-      Array.copy(bytes, offset, dest, zeros, dest.size - zeros)
-      dest
+      if (in.isEmpty) \/.right(zeros)
+      else toBytes(in).map { bytes => zeros ++ bytes }
     }
   }
 

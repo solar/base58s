@@ -4,14 +4,13 @@ organization := "org.sazabi"
 
 version := "0.0.1-SNAPSHOT"
 
-scalaVersion := "2.11.2"
+crossScalaVersions := Seq("2.11.7", "2.10.5")
 
-crossScalaVersions := Seq(scalaVersion.value, "2.10.4")
+scalaVersion := crossScalaVersions.value.head
 
 libraryDependencies ++= Seq(
-  "org.scalaz" %% "scalaz-core" % "7.1.0",
-  "org.scalatest" %% "scalatest" % "2.2.1" % "test",
-  "org.scalacheck" %% "scalacheck" % "1.11.5" % "test")
+  "org.scalaz" %% "scalaz-core" % "7.1.3",
+  "com.github.scalaprops" %% "scalaprops" % "0.1.11" % "test")
 
 incOptions := incOptions.value.withNameHashing(true)
 
@@ -19,7 +18,11 @@ scalacOptions ++= Seq(
   "-unchecked",
   "-deprecation",
   "-feature",
+  "-Xlint",
   "-language:implicitConversions")
+
+testFrameworks += new TestFramework("scalaprops.ScalapropsFramework")
+parallelExecution in Global := false
 
 publishMavenStyle := true
 
