@@ -2,7 +2,7 @@ name := "base58s"
 
 organization := "org.sazabi"
 
-version := "0.0.1-SNAPSHOT"
+version := "0.0.2-SNAPSHOT"
 
 crossScalaVersions := Seq("2.11.7", "2.10.5")
 
