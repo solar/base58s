@@ -2,8 +2,7 @@ package org.sazabi.base58
 
 import scala.annotation.tailrec
 import scala.collection.mutable.StringBuilder
-
-import scalaz._
+import scala.util.{ Failure, Success, Try }
 
 case class Base58String private[base58] (str: String)
 
@@ -47,17 +46,17 @@ trait Base58 {
     }
   }
 
-  def fromString(str: String): Throwable \/ Base58String = {
+  def fromString(str: String): Try[Base58String] = {
     val i = str.indexWhere(index(_).isEmpty)
 
-    if (i == -1) \/-(Base58String(str))
-    else -\/(InvalidCharacterException(str(i), i))
+    if (i == -1) Success(Base58String(str))
+    else Failure(InvalidCharacterException(str(i), i))
   }
 
-  def toByteArray(b58: Base58String): Throwable \/ Array[Byte] = {
-    if (b58.str.isEmpty) \/-(Array.empty[Byte])
+  def toByteArray(b58: Base58String): Try[Array[Byte]] = {
+    if (b58.str.isEmpty) Success(Array.empty[Byte])
     else {
-      def toBytes: String => Throwable \/ Array[Byte] = in => \/.fromTryCatchNonFatal {
+      def toBytes = (in: String) => Try {//: String => Try[Array[Byte]] = in => \/.fromTryCatchNonFatal {
         val size = in.size
         in.zipWithIndex.foldRight(BigInt(0)) { (c, bi) =>
           index(c._1).map { i =>
@@ -69,7 +68,7 @@ trait Base58 {
       val (z, in) = b58.str.span(_ == Base58Chars.head)
       val zeros = z.map(_ => 0: Byte).toArray
 
-      if (in.isEmpty) \/.right(zeros)
+      if (in.isEmpty) Success(zeros)
       else toBytes(in).map { bytes => zeros ++ bytes }
     }
   }

@@ -2,15 +2,11 @@ name := "base58s"
 
 organization := "org.sazabi"
 
-version := "0.0.2-SNAPSHOT"
-
 crossScalaVersions := Seq("2.11.7", "2.10.5")
 
 scalaVersion := crossScalaVersions.value.head
 
-libraryDependencies ++= Seq(
-  "org.scalaz" %% "scalaz-core" % "7.1.3",
-  "com.github.scalaprops" %% "scalaprops" % "0.1.11" % "test")
+libraryDependencies += "com.github.scalaprops" %% "scalaprops" % "0.2.1" % "test"
 
 incOptions := incOptions.value.withNameHashing(true)
 
@@ -23,6 +19,9 @@ scalacOptions ++= Seq(
 
 testFrameworks += new TestFramework("scalaprops.ScalapropsFramework")
 parallelExecution in Global := false
+
+releasePublishArtifactsAction := PgpKeys.publishSigned.value
+releaseCrossBuild := true
 
 publishMavenStyle := true
 

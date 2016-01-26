@@ -1,9 +1,9 @@
 package org.sazabi.base58
 
-import scalaprops._
-import Property.forAll
+import scala.util.Success
 
-import scalaz._, std.string._
+import scalaprops._, Property.forAll
+import scalaz.std.string._
 
 object Base58Test extends Scalaprops {
   private[this] val invalidStr = for {
@@ -22,11 +22,11 @@ object Base58Test extends Scalaprops {
 
     val invert = forAll { (bytes: Array[Byte]) =>
       val base58 = Base58(bytes)
-      Base58.toByteArray(base58).map(_.toSeq) == \/-(bytes.toSeq)
+      Base58.toByteArray(base58).map(_.toSeq) == Success(bytes.toSeq)
     }.toProperties("inverted bytearray should be equal")
 
     val fail = forAll { (s: String) =>
-      Base58.fromString(s).isLeft
+      Base58.fromString(s).isFailure
     }(invalidStr).toProperties("invalid base58 string")
 
     Properties.list(apply, invert, fail)
