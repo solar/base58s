@@ -2,24 +2,30 @@ name := "base58s"
 
 organization := "org.sazabi"
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.12.6"
 
-libraryDependencies ++= Seq(
-  "org.scala-lang.modules" %% "scala-java8-compat" % "0.7.0",
-  "com.github.scalaprops" %% "scalaprops" % "0.2.1" % "test")
+libraryDependencies ++= 
+  "com.github.scalaprops" %% "scalaprops" % "0.5.5" % "test" ::
+  Nil
 
-incOptions := incOptions.value.withNameHashing(true)
 updateOptions := updateOptions.value.withCachedResolution(true)
 
-scalacOptions ++= Seq(
-  "-unchecked",
-  "-deprecation",
-  "-feature",
-  "-Xlint",
-  "-language:implicitConversions",
-  "-Ybackend:GenBCode",
-  "-Ydelambdafy:method",
-  "-target:jvm-1.8")
+scalacOptions ++=
+  "-encoding" :: "UTF-8" ::
+  "-unchecked" ::
+  "-deprecation" ::
+  "-explaintypes" ::
+  "-feature" ::
+  "-language:_" ::
+  "-Xfuture" ::
+  "-Xlint" ::
+  "-Ypartial-unification" ::
+  "-Yno-adapted-args" ::
+  "-Ywarn-infer-any" ::
+  "-Ywarn-value-discard" ::
+  "-Ywarn-nullary-override" ::
+  "-Ywarn-nullary-unit" ::
+  Nil
 
 testFrameworks += new TestFramework("scalaprops.ScalapropsFramework")
 parallelExecution in Global := false
@@ -27,9 +33,9 @@ parallelExecution in Global := false
 releasePublishArtifactsAction := PgpKeys.publishSigned.value
 publishMavenStyle := true
 
-publishTo <<= version { (v: String) =>
+publishTo := {
   val nexus = "https://oss.sonatype.org/"
-  if (v.trim.endsWith("SNAPSHOT"))
+  if (isSnapshot.value)
     Some("snapshots" at nexus + "content/repositories/snapshots")
   else
     Some("releases" at nexus + "service/local/staging/deploy/maven2")
