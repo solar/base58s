@@ -4,8 +4,8 @@ import sbtcrossproject.{crossProject, CrossType}
 lazy val commonSettings = Seq(
   organization := "org.sazabi",
 
-  scalaVersion := "2.12.6",
-  crossScalaVersions := Seq("2.11.12", "2.12.6"),
+  scalaVersion := crossScalaVersions.value.last,
+  crossScalaVersions := Seq("2.11.12", "2.12.12", "2.13.3"),
 
   resolvers ++= (
     ("jitpack" at "https://jitpack.io") ::
@@ -21,25 +21,32 @@ lazy val commonSettings = Seq(
     "-language:_" ::
     "-Xfuture" ::
     "-Xlint" ::
-    "-Ypartial-unification" ::
-    "-Yno-adapted-args" ::
-    "-Ywarn-infer-any" ::
     "-Ywarn-value-discard" ::
-    "-Ywarn-nullary-override" ::
-    "-Ywarn-nullary-unit" ::
     Nil,
 
   scalacOptions ++= {
     CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, 12)) =>
         "-Ywarn-extra-implicit" ::
+        "-Ypartial-unification" ::
+        "-Yno-adapted-args" ::
+        "-Ywarn-infer-any" ::
+        "-Ywarn-nullary-override" ::
+        "-Ywarn-nullary-unit" ::
+        Nil
+      case Some((2, 11)) =>
+        "-Ypartial-unification" ::
+        "-Yno-adapted-args" ::
+        "-Ywarn-infer-any" ::
+        "-Ywarn-nullary-override" ::
+        "-Ywarn-nullary-unit" ::
         Nil
       case _ =>
         Nil
     }
   },
 
-  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.7"),
+  addCompilerPlugin("org.typelevel" % "kind-projector" % "0.11.0" cross CrossVersion.full),
 
   initialCommands in console := """
   import org.sazabi.base58._
@@ -62,14 +69,13 @@ lazy val base58s = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pur
     name         := "base58s",
 
     libraryDependencies ++=
-      "com.github.scalaprops" %%% "scalaprops" % "0.5.5" % "test" ::
+      "com.github.scalaprops" %%% "scalaprops" % "0.8.0" % "test" ::
     Nil,
 
     testFrameworks += new TestFramework("scalaprops.ScalapropsFramework"),
     parallelExecution in Global := false
   )
   .jsSettings(
-    scalacOptions += "-P:scalajs:sjsDefinedByDefault",
     scalacOptions ++= git.gitHeadCommit.value.map { headCommit =>
       val local = baseDirectory.value.toURI
       val remote = s"https://raw.githubusercontent.com/fdietze/base58s/${headCommit}/"

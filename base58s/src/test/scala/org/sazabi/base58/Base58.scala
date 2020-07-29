@@ -3,7 +3,6 @@ package org.sazabi.base58
 import scala.util.Success
 
 import scalaprops._, Property.forAll
-import scalaz.std.string._
 
 object Base58Test extends Scalaprops {
   private[this] val invalidStr = for {
