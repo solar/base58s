@@ -1,61 +1,125 @@
-name := "base58s"
+// shadow sbt-scalajs' crossProject and CrossType until Scala.js 1.0.0 is released
+import sbtcrossproject.{crossProject, CrossType}
 
-organization := "org.sazabi"
+lazy val commonSettings = Seq(
+  organization := "org.sazabi",
 
-scalaVersion := "2.11.8"
+  scalaVersion := crossScalaVersions.value.last,
+  crossScalaVersions := Seq("2.11.12", "2.12.12", "2.13.3"),
 
-libraryDependencies ++= Seq(
-  "org.scala-lang.modules" %% "scala-java8-compat" % "0.7.0",
-  "com.github.scalaprops" %% "scalaprops" % "0.2.1" % "test")
+  resolvers ++= (
+    ("jitpack" at "https://jitpack.io") ::
+    Nil
+  ),
 
-incOptions := incOptions.value.withNameHashing(true)
-updateOptions := updateOptions.value.withCachedResolution(true)
+  scalacOptions ++=
+    "-encoding" :: "UTF-8" ::
+    "-unchecked" ::
+    "-deprecation" ::
+    "-explaintypes" ::
+    "-feature" ::
+    "-language:_" ::
+    "-Xfuture" ::
+    "-Xlint" ::
+    "-Ywarn-value-discard" ::
+    Nil,
 
-scalacOptions ++= Seq(
-  "-unchecked",
-  "-deprecation",
-  "-feature",
-  "-Xlint",
-  "-language:implicitConversions",
-  "-Ybackend:GenBCode",
-  "-Ydelambdafy:method",
-  "-target:jvm-1.8")
+  scalacOptions ++= {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, 12)) =>
+        "-Ywarn-extra-implicit" ::
+        "-Ypartial-unification" ::
+        "-Yno-adapted-args" ::
+        "-Ywarn-infer-any" ::
+        "-Ywarn-nullary-override" ::
+        "-Ywarn-nullary-unit" ::
+        Nil
+      case Some((2, 11)) =>
+        "-Ypartial-unification" ::
+        "-Yno-adapted-args" ::
+        "-Ywarn-infer-any" ::
+        "-Ywarn-nullary-override" ::
+        "-Ywarn-nullary-unit" ::
+        Nil
+      case _ =>
+        Nil
+    }
+  },
 
-testFrameworks += new TestFramework("scalaprops.ScalapropsFramework")
-parallelExecution in Global := false
+  addCompilerPlugin("org.typelevel" % "kind-projector" % "0.11.0" cross CrossVersion.full),
 
-releasePublishArtifactsAction := PgpKeys.publishSigned.value
-publishMavenStyle := true
+  initialCommands in console := """
+  import org.sazabi.base58._
+  """,
+)
 
-publishTo <<= version { (v: String) =>
-  val nexus = "https://oss.sonatype.org/"
-  if (v.trim.endsWith("SNAPSHOT"))
-    Some("snapshots" at nexus + "content/repositories/snapshots")
-  else
-    Some("releases" at nexus + "service/local/staging/deploy/maven2")
-}
+enablePlugins(ScalaJSPlugin)
 
-publishArtifact in Test := false
+lazy val root = (project in file("."))
+  .aggregate(base58sJS, base58sJVM)
+  .settings(commonSettings)
+  .settings(
+    publish := {},
+    publishLocal := {}
+  )
 
-pomIncludeRepository := { _ => false }
+lazy val base58s = crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure)
+  .settings(commonSettings)
+  .settings(
+    name         := "base58s",
 
-pomExtra := (
-  <url>https://github.com/solar/base58s</url>
-  <licenses>
-    <license>
-      <name>Apache 2</name>
-      <url>http://www.apache.org/licenses/LICENSE-2.0.txt"</url>
-      <distribution>repo</distribution>
-    </license>
-  </licenses>
-  <scm>
-    <url>git@github.com:solar/base58s.git</url>
-    <connection>scm:git:git@github.com:solar/base58s.git</connection>
-  </scm>
-  <developers>
-    <developer>
-      <id>solar</id>
-      <name>Shinpei Okamura</name>
-      <url>https://github.com/solar</url>
-    </developer>
-  </developers>)
+    libraryDependencies ++=
+      "com.github.scalaprops" %%% "scalaprops" % "0.8.0" % "test" ::
+    Nil,
+
+    testFrameworks += new TestFramework("scalaprops.ScalapropsFramework"),
+    parallelExecution in Global := false
+  )
+  .jsSettings(
+    scalacOptions ++= git.gitHeadCommit.value.map { headCommit =>
+      val local = baseDirectory.value.toURI
+      val remote = s"https://raw.githubusercontent.com/fdietze/base58s/${headCommit}/"
+      s"-P:scalajs:mapSourceURI:$local->$remote"
+    }
+  )
+
+lazy val base58sJS = base58s.js
+lazy val base58sJVM = base58s.jvm
+
+
+
+/* releasePublishArtifactsAction := PgpKeys.publishSigned.value */
+/* publishMavenStyle := true */
+
+/* publishTo := { */
+/*   val nexus = "https://oss.sonatype.org/" */
+/*   if (isSnapshot.value) */
+/*     Some("snapshots" at nexus + "content/repositories/snapshots") */
+/*   else */
+/*     Some("releases" at nexus + "service/local/staging/deploy/maven2") */
+/* } */
+
+/* publishArtifact in Test := false */
+
+/* pomIncludeRepository := { _ => false } */
+
+/* pomExtra := ( */
+/*   <url>https://github.com/solar/base58s</url> */
+/*   <licenses> */
+/*     <license> */
+/*       <name>Apache 2</name> */
+/*       <url>http://www.apache.org/licenses/LICENSE-2.0.txt"</url> */
+/*       <distribution>repo</distribution> */
+/*     </license> */
+/*   </licenses> */
+/*   <scm> */
+/*     <url>git@github.com:solar/base58s.git</url> */
+/*     <connection>scm:git:git@github.com:solar/base58s.git</connection> */
+/*   </scm> */
+/*   <developers> */
+/*     <developer> */
+/*       <id>solar</id> */
+/*       <name>Shinpei Okamura</name> */
+/*       <url>https://github.com/solar</url> */
+/*     </developer> */
+/*   </developers>) */

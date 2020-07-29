@@ -30,7 +30,7 @@ trait Base58 {
       val s = new StringBuilder
 
       @tailrec
-      def append(rest: BigInt) {
+      def append(rest: BigInt):Unit = {
         val div = rest / Base58Size
         val mod = rest % Base58Size
         s.insert(0, Base58Chars(mod.intValue))
